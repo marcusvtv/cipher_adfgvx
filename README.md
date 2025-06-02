@@ -47,7 +47,7 @@ Para este projeto, todos os arquivos fonte (`.c`) e de cabeçalho (`.h`) residem
 * **`cipher_config.h`**: Contém definições de macros globais (ex: `MAX_MESSAGE_LENGTH`, `MAX_KEY_LENGTH`) e nomes de arquivos padrão.
 * **`file_operations.h` / `file_operations.c`**: Módulo responsável pelas operações de leitura e escrita de arquivos (`read_file`, `write_encrypted_data_to_file`, `write_plaintext_to_file`).
 * **`adfgvx_core.h` / `adfgvx_core.c`**: Módulo contendo a lógica principal para o processo de **cifragem** ADFGVX. A função pública é `cipher_adfgvx()`.
-* **`adfgvx_decipher.h` / `adfgvx_decipher.c`**: Módulo contendo a lógica principal para o processo de **decifragem** ADFGVX, utilizando a lógica que você considera melhor. A função pública é `decipher_adfgvx()`.
+* **`adfgvx_decipher.h` / `adfgvx_decipher.c`**: Módulo contendo a lógica principal para o processo de **decifragem** ADFGVX. A função pública é `decipher_adfgvx()`.
 * **`main_decipher_and_test.c`**: Programa principal que foca na decifragem de um arquivo e na execução de testes de validação.
 * **`main.c` (Opcional/Alternativo)**: Poderia ser um programa principal focado apenas na cifragem, ou um que realize tanto cifragem quanto decifragem de forma integrada.
 
