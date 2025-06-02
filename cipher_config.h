@@ -8,10 +8,9 @@
 #define MAX_KEY_LENGTH 9
 
 // Nomes de arquivo padrão.
-// Se seus arquivos estiverem em um subdiretório como "./src/", ajuste os caminhos.
-// Exemplo: #define DEFAULT_KEY_FILE "./src/key.txt"
 #define DEFAULT_KEY_FILE "./key.txt"
 #define DEFAULT_MESSAGE_FILE "./message.txt"
 #define DEFAULT_ENCRYPTED_FILE "./encrypted.txt"
+#define DEFAULT_DECRYPTED_FILE_FOR_TEST "./decrypted_test_output.txt" // Para o novo main
 
 #endif // CIPHER_CONFIG_H

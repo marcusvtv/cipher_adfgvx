@@ -28,4 +28,13 @@ int write_encrypted_data_to_file(const char *filename,
                                  char encoded_symbol_matrix[][MAX_MESSAGE_LENGTH],
                                  int symbols_per_column[]);
 
+/**
+ * @brief Escreve uma string de texto plano (como a mensagem decifrada) em um arquivo.
+ *
+ * @param filename Caminho para o arquivo onde o texto sera escrito.
+ * @param plaintext_message String contendo a mensagem a ser escrita.
+ * @return int 0 em caso de sucesso, 1 se erro ao abrir ou escrever no arquivo.
+ */
+int write_plaintext_to_file(const char *filename, const char *plaintext_message);
+
 #endif // FILE_OPERATIONS_H

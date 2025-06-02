@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="cipher_adfgvx_v3" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc-mingw32" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/Release/cipher_adfgvx_v3" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc-mingw32" />
+			</Target>
+			<Target title="Decipher_tool_test">
+				<Option output="bin/Release/decipher_tool_test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc-mingw32" />
+			</Target>
+		</Build>
+		<Unit filename="adfgvx_core.c">
+			<Option compilerVar="CC" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="adfgvx_core.h">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="adfgvx_decipher.c">
+			<Option compilerVar="CC" />
+			<Option target="Decipher_tool_test" />
+		</Unit>
+		<Unit filename="adfgvx_decipher.h">
+			<Option target="Decipher_tool_test" />
+		</Unit>
+		<Unit filename="cipher_adfgvx_v3.cbp">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="cipher_config.h">
+			<Option link="1" />
+		</Unit>
+		<Unit filename="file_operations.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="file_operations.h" />
+		<Unit filename="key.txt">
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+			<Option target="Release" />
+		</Unit>
+		<Unit filename="main_decipher_and_test.c">
+			<Option compilerVar="CC" />
+			<Option target="Decipher_tool_test" />
+		</Unit>
+		<Unit filename="message.txt">
+			<Option target="Release" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
