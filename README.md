@@ -49,7 +49,7 @@ Para este projeto, todos os arquivos fonte (`.c`) e de cabeçalho (`.h`) residem
 * **`adfgvx_core.h` / `adfgvx_core.c`**: Módulo contendo a lógica principal para o processo de **cifragem** ADFGVX. A função pública é `cipher_adfgvx()`.
 * **`adfgvx_decipher.h` / `adfgvx_decipher.c`**: Módulo contendo a lógica principal para o processo de **decifragem** ADFGVX. A função pública é `decipher_adfgvx()`.
 * **`main_decipher_and_test.c`**: Programa principal que foca na decifragem de um arquivo e na execução de testes de validação.
-* **`main.c` (Opcional/Alternativo)**: Poderia ser um programa principal focado apenas na cifragem, ou um que realize tanto cifragem quanto decifragem de forma integrada.
+* **`main.c` **: Programa principal focado apenas na cifragem.
 
 ## Principais Métodos (Funções Chave e sua Lógica)
 
@@ -103,12 +103,12 @@ Assumindo que todos os arquivos `.c` e `.h` estão na mesma pasta e você está 
     * **`encrypted.txt`**: (Para decifrar) Deve conter o texto cifrado gerado anteriormente.
 
 2.  **Executando (Exemplo com `adfgvx_decipher_tester`):**
-    * Primeiro, gere um `encrypted.txt` usando uma ferramenta de cifragem (como a `adfgvx_cipher_tool` compilada a partir de um `main` focado em cifragem, ou o `main.c` original (`main_c_v3`) se ele estiver configurado para cifrar).
+    * Primeiro, gere um `encrypted.txt` usando uma ferramenta de cifragem (como a `adfgvx_cipher_tool` compilada a partir de um `main` focado em cifragem.
     * Execute a ferramenta de decifragem e testes:
         ```bash
         ./adfgvx_decipher_tester
         ```
-    * O programa tentará decifrar `encrypted.txt` usando `key.txt`, salvará o resultado em `decrypted_test_output.txt` (ou o nome em `cipher_config.h`), comparará com `message.txt`, e executará testes internos.
+    * O programa tentará decifrar `encrypted.txt` usando `key.txt`, salvará o resultado em `decrypted_test_output.txt`, comparará com `message.txt`, e executará testes internos.
 
 ## Testes para Validação (em `main_decipher_and_test.c`)
 
@@ -131,7 +131,7 @@ A parte de teste no `main_decipher_and_test.c` é crucial para **validar a corre
 * **`test_invalid_character()`**:
     * **O que faz**: Fornece à função `cipher_adfgvx` uma mensagem que contém caracteres que não fazem parte da matriz Polybius definida (ex: `#`, `%`, `@`). A lógica de `get_adfgvx_symbols` deve ignorar esses caracteres inválidos.
     * **Validação**: Compara o texto cifrado resultante com um valor esperado (que seria a cifragem da mensagem contendo apenas os caracteres válidos). Isso confirma que o tratamento de caracteres inválidos está funcionando como projetado, evitando erros ou comportamento inesperado.
-        * Exemplo: Para a entrada "L#UC%AS@!d" com chave "UM", o teste espera que o resultado cifrado seja o mesmo que para "LUCASd".
+        * Exemplo: Para a entrada "L#UC%AS@!d" com chave "UM", o teste espera que o resultado cifrado seja o mesmo que para "LUCAS".
 
 Estes testes, em conjunto, fornecem uma boa cobertura para garantir que a implementação da cifra ADFGVX é correta, funcional e se comporta de maneira previsível sob diferentes condições.
 
