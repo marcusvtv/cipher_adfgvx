@@ -80,8 +80,7 @@ static void polybius_encode_to_columns(int key_length, char message[], char enco
 
         if (!get_adfgvx_symbols(message[i], &r_symbol, &c_symbol))
         {
-            // No código original, caracteres não encontrados são simplesmente ignorados.
-            // Poderia adicionar um log ou um contador de caracteres ignorados se necessário.
+            //Caracteres nao encontrados são ignorados
             continue;
         }
 

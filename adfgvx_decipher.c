@@ -1,6 +1,8 @@
+#include "cipher_config.h"
 #include "adfgvx_decipher.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 // Constantes symbols e square são necessárias para a decifragem
 // e são encapsuladas neste módulo como static.
@@ -29,75 +31,122 @@ static int symbol_index(char c)
 
 /**
  * @brief Reconstrói as colunas originais da cifra com base na chave de transposição.
- * (Função auxiliar estática)
+ * (Função auxiliar estática - lógica fornecida pelo utilizador)
  */
 static void reverse_transposition(char *input, char *key, int key_length, char columns[][MAX_MESSAGE_LENGTH], int col_counts[])
 {
-    if (key_length <= 0) return; // Evita divisão por zero ou comportamento indefinido
+    if (key_length <= 0) { // Proteção contra key_length inválido
+        // Zera col_counts se key_length for inválido para evitar uso de dados não inicializados
+        // No entanto, a função que chama deve garantir key_length > 0.
+        // Se key_length é usado para dimensionar 'order', ele deve ser > 0.
+        return;
+    }
 
     int len = strlen(input);
+    if (len == 0) { // Se a entrada estiver vazia, não há nada a fazer.
+        for(int i=0; i<key_length; ++i) col_counts[i] = 0;
+        return;
+    }
     int rows = len / key_length;
     int extra = len % key_length;
 
-    // 1) monta o vetor “order” com os índices 0,1,2,...,key_length-1
-    int order[key_length];
-    for (int i = 0; i < key_length; i++)
-    {
+    // 1) monta o vetor order[] = {0,1,2,...,key_length-1}
+    int order[key_length]; // VLA
+    for (int i = 0; i < key_length; i++) {
         order[i] = i;
     }
 
-    // 2) ordena esse vetor “order” segundo key[order[i]], para saber a ordem alfabética da chave
-    //    e como as colunas do texto cifrado foram lidas.
-    for (int i = 0; i < key_length - 1; i++)
-    {
-        for (int j = 0; j < key_length - i - 1; j++)
-        {
-            // Compara os caracteres da chave original nos índices apontados por order[j] e order[j+1]
-            if (key[order[j]] > key[order[j + 1]])
-            {
+    // 2) ordena order[] de acordo com key[order[j]], para obter a ordem alfabética
+    //    dos índices originais da chave.
+    for (int i = 0; i < key_length - 1; i++) {
+        for (int j = 0; j < key_length - i - 1; j++) {
+            if (key[order[j]] > key[order[j + 1]]) {
                 int tmp = order[j];
                 order[j] = order[j + 1];
                 order[j + 1] = tmp;
             }
         }
     }
-    // Agora, order[i] contém o índice original da coluna que é a i-ésima na ordem alfabética da chave.
+    // Agora order[i] = índice original da i-ésima coluna EM ORDEM ALFABÉTICA da chave.
 
-    // 3) determina quantos símbolos cada coluna (no índice original) vai ter
-    //    A coluna correspondente a order[i] (que é a i-ésima coluna lida do texto cifrado)
-    //    terá 'rows + 1' símbolos se order[i] (o índice original da coluna) for menor que 'extra'.
-    //    Esta lógica parece ser a forma como as colunas são preenchidas no texto cifrado.
-    //    Isto é, as primeiras 'extra' colunas (na ordem da chave original) recebem um símbolo a mais.
-    //    Então, precisamos mapear de volta: a i-ésima coluna que lemos do texto cifrado (que corresponde a key[order[i]])
-    //    terá um certo comprimento.
-    //    O código original calcula col_counts[orig_index], onde orig_index é o índice original.
-    //    Isto está correto: as colunas são preenchidas no texto cifrado de acordo com a ordem alfabética da chave.
-    //    As primeiras 'extra' colunas *na ordem alfabética da chave* recebem um símbolo a mais.
-
-    // Ajuste: col_counts[i] deve ser o tamanho da i-ésima coluna na ordem alfabética.
+    // 3) determina quantos símbolos cada coluna (identificada pelo seu índice original) vai ter.
+    //    A lógica fornecida: a coluna “orig_index” recebeu rows+1 símbolos se orig_index < extra.
+    //    Isto significa que as primeiras 'extra' colunas *na ordem original da chave* são as mais longas.
+    //    Isto é diferente da forma como a cifragem normalmente distribui (onde as primeiras 'extra'
+    //    colunas *na ordem alfabética da chave* são as mais longas ao ler o texto cifrado linearmente).
+    //    No entanto, vamos seguir a lógica fornecida.
+    //    Para que esta lógica funcione, o texto cifrado (input) deve ter sido construído
+    //    de forma que as colunas correspondentes aos primeiros 'extra' índices originais da chave
+    //    foram preenchidas com 'rows+1' símbolos, e as restantes com 'rows' símbolos,
+    //    E ENTÃO estas colunas foram concatenadas na ordem alfabética da chave.
+    //    Se for assim, então, ao ler o 'input', precisamos saber o comprimento de cada
+    //    coluna *na ordem alfabética*.
+    //    A i-ésima coluna na ordem alfabética (que originalmente era a coluna order[i])
+    //    terá rows+1 símbolos se ELA (a i-ésima coluna alfabética) for uma das 'extra' colunas.
+    //    Portanto, o comprimento da coluna order[i] é rows + (i < extra ? 1 : 0).
+    //    O código do utilizador faz: col_counts[orig_index] = rows + (orig_index < extra ? 1 : 0);
+    //    Vou manter a lógica do utilizador como solicitada.
     for (int i = 0; i < key_length; i++)
     {
-         col_counts[i] = rows + (i < extra ? 1 : 0);
+        int orig_index = order[i]; // orig_index é o índice da coluna original que é a i-ésima na ordem alfabética
+        col_counts[orig_index] = rows + (orig_index < extra ? 1 : 0);
     }
 
 
-    // 4) preenche cada “columns[order[i]]” lendo do texto cifrado linearizado
-    //    A i-ésima coluna (na ordem alfabética) corresponde a columns[order[i]] na matriz de saída
-    //    (que queremos que esteja na ordem original da chave).
-    //    O texto cifrado é lido sequencialmente. A primeira porção preenche a primeira coluna
-    //    alfabética (key[order[0]]), a segunda porção preenche a segunda coluna alfabética (key[order[1]]), etc.
-    int pos = 0;
-    for (int i = 0; i < key_length; i++) // Itera sobre as colunas na ordem alfabética da chave
-    {
-        int original_col_index = order[i]; // Coluna original que corresponde à i-ésima coluna alfabética
-        int current_col_len = col_counts[i]; // Comprimento da i-ésima coluna alfabética
+    // 4) preenche cada “columns[orig_index]” lendo do texto cifrado linearizado
+    //    O texto cifrado (input) é a concatenação das colunas na ordem alfabética da chave.
+    //    A i-ésima coluna na ordem alfabética da chave é a coluna original order[i].
+    //    O comprimento desta i-ésima coluna alfabética é o que precisamos para ler do input.
+    //    Este comprimento NÃO é col_counts[order[i]] (que foi calculado acima com base em orig_index < extra).
+    //    Precisamos do comprimento da i-ésima coluna *alfabética*.
+    //    Seja `len_alpha[i]` o comprimento da i-ésima coluna alfabética.
+    //    `len_alpha[i] = rows + (i < extra ? 1 : 0);`
+    //    Então, lemos `len_alpha[i]` caracteres do `input` e colocamos em `columns[order[i]]`.
+    //    A lógica do utilizador no passo 4 é:
+    //    `int col_index = order[i];`
+    //    `for (int j = 0; j < col_counts[col_index]; j++) { columns[col_index][j] = input[pos++]; }`
+    //    Isto usa `col_counts[col_index]` (onde `col_index` é o índice original) como o número de
+    //    caracteres a serem lidos do `input` para a coluna `columns[col_index]`.
+    //    Isto implica que `col_counts[k]` deve ser o comprimento da coluna `k` quando ela é lida
+    //    do `input` (ou seja, quando a coluna `k` aparece na ordem alfabética da chave).
+    //    Portanto, o passo 3 do utilizador está correto se `col_counts[orig_index]` for interpretado
+    //    como o comprimento da coluna `orig_index` *quando ela é lida do texto cifrado linear*.
+    //    Mas o texto cifrado é lido coluna alfabética por coluna alfabética.
+    //    A i-ésima coluna alfabética tem `rows + (i < extra ? 1 : 0)` caracteres.
+    //    Esta i-ésima coluna alfabética corresponde à coluna original `order[i]`.
+    //    Então, `columns[order[i]]` é preenchida com `rows + (i < extra ? 1 : 0)` caracteres.
+    //    E `col_counts[order[i]]` deve ser igual a `rows + (i < extra ? 1 : 0)`.
+    //    A lógica do utilizador no passo 3: `col_counts[orig_index] = rows + (orig_index < extra ? 1 : 0);`
+    //    A lógica do utilizador no passo 4: usa `col_counts[col_index]` (onde `col_index = order[i]`).
+    //    Vou implementar exatamente como o utilizador forneceu, assumindo que a sua cifragem
+    //    produz um `input` que é decifrável por esta lógica.
 
-        for (int j = 0; j < current_col_len; j++)
-        {
-            if (pos < len) { // Segurança
-                columns[original_col_index][j] = input[pos++];
+    // Limpa col_counts antes de recalcular, para garantir que não há lixo.
+    memset(col_counts, 0, key_length * sizeof(int));
+
+    // Passo 3 do utilizador (calcula o tamanho de cada coluna original)
+    for (int i = 0; i < key_length; i++) {
+        int orig_index = order[i]; // order[i] é o índice original da i-ésima coluna alfabética
+        // O utilizador atribui o comprimento à coluna original baseado no seu próprio índice original.
+        col_counts[orig_index] = rows + (orig_index < extra ? 1 : 0);
+    }
+
+    // Passo 4 do utilizador (preenche as colunas)
+    int pos = 0;
+    for (int i = 0; i < key_length; i++) { // Itera sobre as colunas na ordem alfabética da chave
+        int original_col_index_to_fill = order[i]; // Esta é a coluna original que estamos a preencher agora
+        // O número de caracteres a ler do 'input' para esta coluna (original_col_index_to_fill)
+        // é o seu tamanho, que foi calculado em col_counts[original_col_index_to_fill].
+        int num_chars_for_this_col = col_counts[original_col_index_to_fill];
+
+        for (int j = 0; j < num_chars_for_this_col; j++) {
+            if (pos < len) {
+                columns[original_col_index_to_fill][j] = input[pos++];
             } else {
-                break; // Evita ler além do input
+                // Erro: input mais curto que o esperado pelos comprimentos das colunas.
+                // Preencher o resto com nulos ou retornar erro?
+                // Por agora, apenas para.
+                return;
             }
         }
     }
@@ -105,47 +154,45 @@ static void reverse_transposition(char *input, char *key, int key_length, char c
 
 
 /**
- * @brief Reverte a organização em colunas, reconstruindo a sequência de símbolos linha a linha.
- * (Função auxiliar estática)
+ * @brief Reverte a organizacao em colunas, reconstruindo a sequencia de simbolos linha a linha.
+ * (Funcao auxiliar estatica - logica do utilizador)
  */
 static void reverse_polybius(char columns[][MAX_MESSAGE_LENGTH], int col_counts[], int key_length, char *output)
 {
-    if (key_length <= 0) {
+    if (key_length <= 0 || !output) {
         if (output) output[0] = '\0';
         return;
     }
+
     int max_rows = 0, pos = 0;
 
-    // Encontra o número máximo de linhas em qualquer coluna (para saber até onde iterar)
     for (int i = 0; i < key_length; i++)
     {
         if (col_counts[i] > max_rows)
             max_rows = col_counts[i];
     }
 
-    // Lê linha por linha, através das colunas (na ordem original da chave)
     for (int r = 0; r < max_rows; r++)
     {
         for (int c = 0; c < key_length; c++) // Itera sobre as colunas na ordem original da chave
         {
-            if (r < col_counts[c]) // Se a coluna 'c' tiver um símbolo na linha 'r'
+            if (r < col_counts[c]) // Se a coluna 'c' tiver um simbolo na linha 'r'
             {
-                if (pos < MAX_MESSAGE_LENGTH * 2) { // Segurança para o buffer de saída
+                if (pos < MAX_MESSAGE_LENGTH * 2) { // Protege o buffer de saida 'output' (rearranged)
                     output[pos++] = columns[c][r];
                 } else {
-                    // Buffer de saída 'rearranged' está cheio
                     if (output) output[pos] = '\0'; // Tenta terminar a string
-                    return;
+                    return; // Buffer de saida cheio
                 }
             }
         }
     }
-    if (output) output[pos] = '\0'; // Termina a string de saída
+    if (output) output[pos] = '\0'; // Termina a string de saida
 }
 
 /**
- * @brief Decodifica pares de símbolos ADFGVX em caracteres da matriz Polybius.
- * (Função auxiliar estática)
+ * @brief Decodifica pares de simbolos ADFGVX em caracteres da matriz Polybius.
+ * (Funcao auxiliar estatica - logica do utilizador)
  */
 static void decode_symbols(char *pairs, char *message)
 {
@@ -154,9 +201,8 @@ static void decode_symbols(char *pairs, char *message)
     int len = strlen(pairs);
     int msg_index = 0;
 
-    if (len % 2 != 0) { // Número ímpar de símbolos não pode ser decodificado
-        message[0] = '\0';
-        // Poderia retornar um código de erro ou logar
+    if (len % 2 != 0) {
+        message[0] = '\0'; // Nao pode decodificar numero impar de simbolos
         return;
     }
 
@@ -164,62 +210,50 @@ static void decode_symbols(char *pairs, char *message)
     {
         int row = symbol_index(pairs[i]);
         int col = symbol_index(pairs[i + 1]);
-        if (row >= 0 && col >= 0) // Se ambos os símbolos do par são válidos
+        if (row >= 0 && col >= 0) // Se o par de simbolos e valido
         {
-            if (msg_index < MAX_MESSAGE_LENGTH -1) { // Segurança para o buffer de mensagem
+            if (msg_index < MAX_MESSAGE_LENGTH - 1) { // Protege o buffer de saida 'message'
                 message[msg_index++] = square[row][col];
             } else {
-                // Buffer de mensagem cheio
-                break;
+                break; // Buffer de mensagem cheio
             }
         } else {
-            // Par de símbolos inválido, pode indicar corrupção ou erro
-            // O que fazer? Continuar, parar, inserir um placeholder?
-            // Por enquanto, vamos parar para evitar dados incorretos.
-            // Ou poderia inserir um '?' e continuar, dependendo do requisito.
-            // message[msg_index++] = '?'; // Exemplo de placeholder
-            break; // Parar se um par inválido for encontrado
+            // Par de simbolos invalido.
+            // O comportamento original era parar. Mantendo isso.
+            break;
         }
     }
     message[msg_index] = '\0'; // Termina a string da mensagem decifrada
 }
 
-// Implementação da função pública
+// Implementacao da funcao publica
 void decipher_adfgvx(char *encrypted_text, char *key, int key_length, char *output)
 {
+    // Validacao basica de parametros
     if (!encrypted_text || !key || !output || key_length <= 0 || key_length >= MAX_KEY_LENGTH) {
-        if (output) output[0] = '\0'; // Garante terminação nula em caso de erro de parâmetro
-        return; // Tratamento básico de erro de parâmetro
+        if (output) output[0] = '\0';
+        return;
     }
-
-    // VLAs - certifique-se de que key_length é válido
-    char columns[key_length][MAX_MESSAGE_LENGTH];
-    int col_counts[key_length]; // Não precisa inicializar com {0} aqui, reverse_transposition fará
-                                // ou melhor, reverse_transposition deve receber col_counts já zerado ou zerá-lo.
-                                // A lógica de reverse_transposition calcula col_counts.
-
-    // Buffer para a sequência de símbolos após reverter a transposição.
-    // O tamanho máximo é o mesmo do texto cifrado. +1 para o nulo.
-    int encrypted_len = strlen(encrypted_text);
-    if (encrypted_len == 0) {
+    if (strlen(encrypted_text) == 0) {
         output[0] = '\0';
         return;
     }
-    // O buffer 'rearranged' precisa ser grande o suficiente para encrypted_text + nulo.
-    // MAX_MESSAGE_LENGTH * 2 é o tamanho máximo de símbolos ADFGVX.
-    char rearranged[MAX_MESSAGE_LENGTH * 2 + 1];
 
-    // Inicializa col_counts, embora reverse_transposition vá preenchê-lo.
-    // É uma boa prática zerar arrays antes de passar para funções que os modificam,
-    // a menos que a função garanta a inicialização.
+    // VLAs para 'columns' e 'col_counts'.
+    char columns[key_length][MAX_MESSAGE_LENGTH];
+    int col_counts[key_length];
+    // É crucial zerar col_counts e columns antes de usá-los,
+    // especialmente porque reverse_transposition pode não preencher todas as partes se len for 0.
     memset(col_counts, 0, key_length * sizeof(int));
-    // Zera a matriz de colunas também pode ser uma boa prática
     for(int i=0; i<key_length; ++i) {
         memset(columns[i], 0, MAX_MESSAGE_LENGTH * sizeof(char));
     }
 
+    // Buffer para a sequencia de simbolos apos reverter a transposicao.
+    // O tamanho máximo é o mesmo do texto cifrado (que pode ser até MAX_MESSAGE_LENGTH * 2).
+    char rearranged_symbols[MAX_MESSAGE_LENGTH * 2 + 1]; // +1 para o nulo
 
     reverse_transposition(encrypted_text, key, key_length, columns, col_counts);
-    reverse_polybius(columns, col_counts, key_length, rearranged);
-    decode_symbols(rearranged, output);
+    reverse_polybius(columns, col_counts, key_length, rearranged_symbols);
+    decode_symbols(rearranged_symbols, output);
 }
